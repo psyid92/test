@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="score">
+	<insert id="insertScore" parameterType="com.sp.score.Score">
+		INSERT INTO score(hak, name, birth, kor, eng, mat)
+		VALUES (#{hak}, #{name}, #{birth}, #{kor}, #{eng}, #{mat})
+	</insert>
+	
+	<sql id="where-list">
+		<if test="searchKey=='hak'">
+			hak=#{searchValue}
+		</if>
+		<if test="searchKey=='name'">
+			INSTR(name, #{searchValue}) &gt; = 1
+		</if>
+		<if test="searchKey=='birth'">
+			TO_CHAR(birth, 'YYYY-MM-DD') = #{searchValue} OR
+			TO_CHAR(birth, 'YYYYMMDD') = #{searchValue}
+		</if>
+	</sql>
+	
+	<select id="dataCount" resultType="Integer" parameterType="map">
+		SELECT NVL(COUNT(*), 0) FROM score
+		<where>
+			<if test="searchValue != null and searchValue != ''">
+				<include refid="where-list"/>
+			</if>
+		</where>
+	</select>
+	
+	<select id="listScore" resultType="com.sp.score.Score" parameterType="map">
+		SELECT * FROM (
+			SELECT ROWNUM rnum, tb.* FROM (
+				SELECT hak, name, 
+				TO_CHAR(birth, 'YYYY-MM-DD') birth,
+				kor, eng, mat, (kor+eng+mat) tot,
+				(kor+eng+mat)/3 ave
+				FROM score
+				<where>
+					<if test="searchValue != null and searchValue != ''">
+						<include refid="where-list"/>
+					</if>
+				</where>
+				ORDER BY hak ASC
+<![CDATA[
+			) tb WHERE ROWNUM <= #{end}
+		) WHERE rnum >= #{start}
+]]>
+	</select>
+	
+	<select id="readScore" parameterType="String" resultType="com.sp.score.Score">
+		SELECT hak, name,
+			TO_CHAR(birth, 'YYYY-MM-DD') birth,
+			kor, eng, mat
+		FROM score WHERE hak = #{hak}
+	</select>
+	
+	<update id="updateScore" parameterType="com.sp.score.Score">
+		UPDATE score SET name = #{name}, birth = #{birth},
+			kor = #{kor}, eng = #{eng}, mat = #{mat}
+			WHERE hak = #{hak}
+	</update>
+	
+	<delete id="deleteScore" parameterType="String">
+		DELETE FROM score WHERE hak = #{hak}
+	</delete>
+	
+	<delete id="deleteScoreList" parameterType="java.util.List">
+		DELETE FROM score WHERE
+		hak IN
+		<foreach item="hak" index="index" collection="list" open="(" separator="," close=")">
+			#{hak}
+		</foreach>
+	</delete>
+	
+</mapper>

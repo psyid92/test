@@ -15,7 +15,7 @@
 			INSTR(subject, #{searchValue}) &gt;= 1
 		</if>
 		<if test="searchKey=='content'">
-			DBMS_LOG.INSTR(content, #{searchValue}) &gt;= 1
+			DBMS_LOB.INSTR(content, #{searchValue}) &gt;= 1
 		</if>
 		<if test="searchKey=='created'">
 			TO_CHAR(created, 'YYYY-MM-DD') = #{searchValue} OR

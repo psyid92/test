@@ -20,14 +20,14 @@
 	    pg : 'inicis', // version 1.1.0부터 지원.
 	    pay_method : 'card',
 	    merchant_uid : 'merchant_' + new Date().getTime(),
-	    name : '주문명:결제테스트',
+	    name : '주문명:양념치킨',
 	    amount : 100,
-	    buyer_email : 'iamport@siot.do',
-	    buyer_name : '구매자이름',
-	    buyer_tel : '010-1234-5678',
-	    buyer_addr : '서울특별시 강남구 삼성동',
+	    buyer_email : 'djswprkwlsk1@naver.com',
+	    buyer_name : '김종현',
+	    buyer_tel : '010-9970-1771',
+	    buyer_addr : '경기도 안산시 상록구 일동 592-6',
 	    buyer_postcode : '123-456',
-	    m_redirect_url : 'https://www.yourdomain.com/payments/complete'
+	    m_redirect_url : '<%=cp%>/googleMapAPItest.jsp'
 	}, function(rsp) {
 	    if ( rsp.success ) {
 	        var msg = '결제가 완료되었습니다.';

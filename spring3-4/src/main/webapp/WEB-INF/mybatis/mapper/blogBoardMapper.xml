@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blogBoard">
+
+	<select id="maxNum" resultType="Integer" parameterType="map">
+		SELECT NVL(MAX(num), 0) FROM ${tableName}_board
+	</select>
+	
+	<insert id="insertBoard" 
+	      parameterType="com.sp.blog.post.Board">
+       INSERT INTO ${tableName}_board(num, blogSeq, categoryNum, subject, content)
+               VALUES
+               (#{num}, #{blogSeq}, #{categoryNum}, #{subject}, #{content})
+    </insert>
+
+	<sql id="where-list">
+		<if test="categoryNum==1 ">
+			b.categoryNum = #{categoryNum}
+		</if>
+		<if test="categoryNum!=1 ">
+			(
+			     <if test="owner==1">
+			        b.categoryNum = #{categoryNum} OR 
+			             b.categoryNum IN (SELECT categoryNum FROM ${tableName}_category
+			                   WHERE parent=#{categoryNum})
+			     </if>
+			     <if test="owner==0">
+			          (
+			            b.categoryNum = #{categoryNum} OR 
+			                 b.categoryNum IN (SELECT categoryNum FROM ${tableName}_category
+			                     WHERE parent=#{categoryNum} AND closed=0)
+			           )
+			           AND c.closed=0
+			     </if>
+			 ) 
+		</if>
+	</sql>
+	
+	<!--  데이터개수  -->
+	<select id="dataCount" parameterType="map" 
+	       resultType="Integer">
+		SELECT NVL(COUNT(*), 0) FROM ${tableName}_board b
+		    JOIN blogInfo i ON b.blogSeq = i.blogSeq
+		    JOIN ${tableName}_category c ON b.categoryNum = c.categoryNum
+		<where>
+			<if test="categoryNum!=0">
+				<include refid="where-list"/>
+			</if>
+			<if test="categoryNum==0">
+		          b.categoryNum != 1
+			     <if test="owner==0">
+			       AND (
+			              b.categoryNum NOT IN (
+                               SELECT categoryNum FROM ${tableName}_category
+                               WHERE
+                               parent IN (
+                                    SELECT categoryNum FROM ${tableName}_category WHERE closed=1)
+                          )
+		           )
+		           AND c.closed=0
+			     </if>
+		    </if>
+		</where>
+	</select>
+	
+	<!-- 리스트 -->
+	<select id="listBoard" parameterType="map" 
+	       resultType="com.sp.blog.post.Board">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+			     SELECT num, b.blogSeq, i.userId blogId, b.categoryNum, b.subject, b.hitCount, 
+			           TO_CHAR(b.created, 'YYYY-MM-DD') created, c.closed
+			        FROM ${tableName}_board b
+	                JOIN blogInfo i ON b.blogSeq = i.blogSeq
+	                JOIN ${tableName}_category c ON b.categoryNum = c.categoryNum
+                    <where>
+                         <if test="categoryNum!=0">
+			                  <include refid="where-list"/>
+		                 </if>
+		                 <if test="categoryNum==0">
+		                        b.categoryNum != 1
+			                  <if test="owner==0">
+			                       AND (
+			                          b.categoryNum NOT IN (
+                                            SELECT categoryNum FROM ${tableName}_category
+                                            WHERE parent IN (
+                                                         SELECT categoryNum FROM ${tableName}_category WHERE closed=1)
+                                       )
+		                            )
+		                           AND c.closed=0
+			                  </if>
+		                 </if>
+	                </where>
+	                ORDER BY num DESC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+	 </select>
+
+    <!-- 글보기 -->
+    <select id="readBoard" resultType="com.sp.blog.post.Board" 
+            parameterType="map">
+        SELECT b.num, b.blogSeq, i.userId blogId, b.categoryNum, c.classify, 
+                NVL(c.parent, 0) parent , g.classify groupClassify,
+                b.subject, b.content, b.created, b.hitCount
+           FROM ${tableName}_board b
+           JOIN blogInfo i ON b.blogSeq = i.blogSeq
+           JOIN ${tableName}_category c ON b.categoryNum = c.categoryNum
+           LEFT OUTER JOIN (
+              SELECT categoryNum, classify FROM ${tableName}_category
+              WHERE parent IS NULL
+           ) g ON c.parent = g.categoryNum
+            WHERE b.num = #{num}
+    </select>
+
+    <!-- 조회수 증가 -->
+    <update id="updateHitCount" parameterType="map">
+        UPDATE ${tableName}_board SET hitCount=hitCount+1 WHERE num = #{num}
+    </update>
+
+    <!-- 이전글 -->
+    <select id="preReadBoard" resultType="com.sp.blog.post.Board" 
+            parameterType="map">
+        SELECT tb.* FROM (
+            SELECT num, subject FROM ${tableName}_board b
+		    JOIN blogInfo i ON b.blogSeq = i.blogSeq
+		    JOIN ${tableName}_category c ON b.categoryNum = c.categoryNum
+                <where>
+                    <if test="categoryNum!=0">
+                        <include refid="where-list"/>
+                    </if>
+                    <if test="categoryNum==0">
+		                        b.categoryNum != 1
+			                  <if test="owner==0">
+			                       AND (
+			                          b.categoryNum NOT IN (
+                                            SELECT categoryNum FROM ${tableName}_category
+                                            WHERE parent IN (
+                                                         SELECT categoryNum FROM ${tableName}_category WHERE closed=1)
+                                       )
+		                            )
+		                           AND c.closed=0
+			                  </if>
+		             </if>
+                    <![CDATA[
+                        AND (num > #{num})
+                    ]]>
+                </where>
+                ORDER BY num ASC
+            ) tb WHERE ROWNUM=1
+    </select>
+
+    <!-- 다음글 -->
+    <select id="nextReadBoard" resultType="com.sp.blog.post.Board" 
+            parameterType="map">
+        SELECT tb.* FROM (
+            SELECT num, subject FROM ${tableName}_board b
+		    JOIN blogInfo i ON b.blogSeq = i.blogSeq
+		    JOIN ${tableName}_category c ON b.categoryNum = c.categoryNum
+                    <where>
+                         <if test="categoryNum!=0">
+                              <include refid="where-list"/>
+                         </if>
+                         <if test="categoryNum==0">
+		                        b.categoryNum != 1
+			                  <if test="owner==0">
+			                       AND (
+			                          b.categoryNum NOT IN (
+                                            SELECT categoryNum FROM ${tableName}_category
+                                            WHERE parent IN (
+                                                         SELECT categoryNum FROM ${tableName}_category WHERE closed=1)
+                                       )
+		                            )
+		                           AND c.closed=0
+			                  </if>
+		                 </if>
+                       <![CDATA[
+                         AND (num < #{num})
+                         ]]>
+                    </where>
+                ORDER BY num DESC
+            ) tb WHERE ROWNUM=1
+    </select>
+    
+    <!-- 수정 -->
+    <update id="updateBoard" 
+          parameterType="com.sp.blog.post.Board">
+          UPDATE ${tableName}_board SET categoryNum=#{categoryNum}, subject=#{subject},
+               content=#{content}
+               WHERE num=#{num}
+    </update>
+    
+    <!-- 삭제 -->
+	<delete id="deleteBoard" parameterType="map">
+		DELETE FROM ${tableName}_board WHERE num=#{num}
+	</delete>
+	
+	<!-- 파일 *********************** -->
+	<select id="maxFileNum" resultType="Integer" parameterType="map">
+		SELECT NVL(MAX(fileNum), 0) FROM ${tableName}_boardFile
+	</select>
+	
+	<insert id="insertFile" parameterType="com.sp.blog.post.Board">
+	  INSERT INTO ${tableName}_boardFile (fileNum, num, saveFilename, 
+	    originalFilename, fileSize) VALUES
+	       (noticeFile_seq.NEXTVAL, #{num}, #{saveFilename},
+	           #{originalFilename}, #{fileSize})
+	</insert>
+	
+	<select id="listFile" parameterType="map"
+	              resultType="com.sp.blog.post.Board">
+	SELECT  fileNum, num, saveFilename, 
+	    originalFilename, fileSize
+	    FROM ${tableName}_boardFile WHERE  num=#{num}    
+	</select>
+	
+	<select id="readFile" parameterType="map"
+	              resultType="com.sp.blog.post.Board">
+	SELECT  fileNum, num, saveFilename, 
+	    originalFilename, fileSize
+	    FROM ${tableName}_boardFile WHERE fileNum=#{fileNum}      
+	</select>
+	
+	<delete id="deleteFile" parameterType="map">
+	DELETE FROM ${tableName}_boardFile WHERE ${field} = #{num}
+	</delete>
+	
+	
+	<!-- 댓글 *********************** -->
+      <select id="maxReplyNum" resultType="Integer" parameterType="map">
+      	    SELECT NVL(MAX(replyNum), 0) FROM ${tableName}_boardReply
+      </select>
+
+	<!-- 댓글 추가................. -->
+	<insert id="insertReply" parameterType="com.sp.blog.post.Reply">
+	INSERT INTO ${tableName}_boardReply(replyNum, num, userId, content, answer)
+	   VALUES (#{replyNum}, #{num},#{userId},
+	        #{content}, #{answer})
+	</insert>
+	
+	<select id="replyDataCount" resultType="Integer" parameterType="map">
+	   SELECT NVL(COUNT(*), 0)
+	        FROM ${tableName}_boardReply WHERE num=#{num} AND answer=0
+	</select>
+	
+	<!-- 댓글 리스트 -->
+	<select id="listReply" resultType="com.sp.blog.post.Reply" parameterType="map">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+		        SELECT tbreply.replyNum, num, userId, userName 
+		                    ,content, created, tbreply.answer
+		                    ,NVL(answerCount, 0) answerCount
+		                    ,NVL(likeCount, 0) likeCount
+		                    ,NVL(disLikeCount, 0) disLikeCount
+		        FROM
+		        (
+				      (
+					     SELECT replyNum, r.num, r.userId, userName, r.content, r.created, answer
+					        FROM ${tableName}_boardReply r 
+			                JOIN ${tableName}_board b ON r.num=b.num
+			                JOIN member2 m ON r.userId=m.userId
+			                WHERE r.num=#{num} AND answer=0
+			           ) tbreply
+			           LEFT OUTER JOIN
+			           (
+			                SELECT answer, COUNT(*) answerCount
+                                 FROM ${tableName}_boardReply GROUP BY answer
+			           ) tbanswer ON tbreply.replyNum = tbanswer.answer
+			           LEFT OUTER JOIN
+			           (
+			                SELECT replyNum, 
+			                         COUNT(DECODE(replyLike, 1, 1)) likeCount,
+			                         COUNT(DECODE(replyLike, 0, 1)) disLikeCount
+                                 FROM ${tableName}_boardReplyLike GROUP BY replyNum
+			           ) tblike ON tbreply.replyNum = tblike.replyNum
+	           )
+	           ORDER BY replyNum DESC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+	</select>
+
+    <!-- 댓글별 답글 리스트 -->
+	<select id="listReplyAnswer" resultType="com.sp.blog.post.Reply" parameterType="map">
+     SELECT replyNum, num, tbreply.userId, userName, content, created, answer
+	          FROM ${tableName}_boardReply tbreply 
+	          JOIN member2 m ON tbreply.userId=m.userId
+              WHERE answer=#{answer}
+              ORDER BY replyNum DESC
+	</select>
+	
+    <!-- 댓글별 답글 개수 -->
+	<select id="replyCountAnswer" resultType="Integer" parameterType="map">
+	   SELECT NVL(COUNT(*), 0)
+	        FROM ${tableName}_boardReply WHERE answer=#{answer}
+	</select>
+	
+	<delete id="deleteReply" parameterType="map">
+	  DELETE ${tableName}_boardReply WHERE
+	    <if test="mode == 'num' ">
+			 num=#{num}
+		</if>
+	    <if test="mode == 'reply' ">
+			 replyNum IN 
+               (SELECT replyNum FROM ${tableName}_boardReply START WITH  replyNum = #{replyNum}
+	            CONNECT BY PRIOR replyNum = answer)
+		</if>
+	    <if test="mode == 'answer' ">
+			 replyNum=#{replyNum}
+		</if>
+	</delete>
+	
+	<!-- 댓글 좋아요/싫어요 처리................. -->
+	<insert id="insertReplyLike" parameterType="com.sp.blog.post.Reply">
+	INSERT INTO ${tableName}_boardReplyLike(replyNum, userId, replyLike)
+	   VALUES (#{replyNum}, #{userId}, #{replyLike})
+	</insert>
+
+	<select id="replyCountLike" resultType="map" parameterType="map">
+	   SELECT  NVL(COUNT(DECODE(replyLike, 1, 1)), 0) likeCount,
+			        NVL(COUNT(DECODE(replyLike, 0, 1)), 0) disLikeCount
+	        FROM ${tableName}_boardReplyLike WHERE replyNum=#{replyNum}
+	</select>
+	
+	
+</mapper>

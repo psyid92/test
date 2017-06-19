@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blogGuest">
+	<select id="maxNum" resultType="Integer" parameterType="map">
+		SELECT NVL(MAX(num), 0) FROM ${tableName}_guest
+	</select>
+	
+	<insert id="insertGuest" parameterType="com.sp.blog.guest.Guest">
+	INSERT INTO ${tableName}_guest(num, blogSeq, userId, content)
+	   VALUES (#{num}, #{blogSeq}, #{userId}, #{content})
+	</insert>
+	
+	<select id="dataCount" parameterType="map" resultType="Integer">
+	   SELECT NVL(COUNT(*), 0) FROM ${tableName}_guest
+	</select>
+	
+	<select id="listGuest" resultType="com.sp.blog.guest.Guest" 
+	          parameterType="map">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+			     SELECT num, g.userId, m.userName, g.blogSeq, g.content, g.created
+			        FROM ${tableName}_guest g 
+	                JOIN member2 m ON g.userId=m.userId
+	                ORDER BY num DESC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+	</select>
+	
+	<delete id="deleteGuest" parameterType="map">
+	DELETE ${tableName}_guest WHERE num=#{num}
+	</delete>   
+	
+
+</mapper>

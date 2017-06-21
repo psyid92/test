@@ -34,21 +34,29 @@
 	</select>
 	
 	<select id="listBoard" resultType="com.sp.bbs.Board" parameterType="map">
-		SELECT * FROM (
-			SELECT ROWNUM rnum, tb.* FROM (
-				SELECT num, subject, userName, hitCount, saveFilename,
-				TO_CHAR(created, 'YYYY-MM-DD')
-				FROM bbs b
-				JOIN member1 m ON b.userId = m.userId
-				<where>
-					<if test="searchValue != null and searchValue != ''">
-						<include refid="where-list"/>
-					</if>
-				</where>
-				ORDER BY num DESC
+			SELECT * FROM (
+SELECT ROWNUM rnum, tb.* FROM (
+SELECT tbBbs.num, userId, userName, subject, created, hitCount, saveFilename, NVL(replyCount, 0) replyCount
+FROM 
+((
+SELECT num, b.userId, userName, subject, TO_CHAR(b.created, 'YYYY-MM-DD') created, hitCount,saveFilename
+FROM bbs b JOIN member1 m ON b.userId = m.userId
+  <where>
+    <if test="searchValue != null and searchValue != ''">
+      <include refid="where-list"/>
+    </if>
+  </where>
+)tbBbs
+LEFT OUTER JOIN
+(
+  SELECT num, COUNT(*) replyCount
+    FROM bbsReply WHERE answer = 0 GROUP BY num
+  )tbReply ON tbBbs.num = tbReply.num
+)
+ORDER BY num DESC
 <![CDATA[
-			) tb WHERE ROWNUM <= #{end}
-		) WHERE rnum >= #{start}
+  ) tb WHERE ROWNUM <= #{end}
+)WHERE rnum >= #{start}
 ]]>
 	</select>
 	<select id="readBoard" resultType="com.sp.bbs.Board" parameterType="Integer">

@@ -97,7 +97,7 @@ $(function(){
                 <li><a href="#">일정관리</a></li>
                 <li><a href="#">친구관리</a></li>
                 <li><a href="#">사진첩</a></li>
-                <li><a href="#">채팅</a></li>
+                <li><a href="<%=cp%>/chat/main">채팅</a></li>
                 <li><a href="<%=cp%>/member/pwd?dropout">탈퇴</a></li>
             </ul>
         </li>

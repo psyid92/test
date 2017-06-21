@@ -20,7 +20,7 @@
 	    pg : 'inicis', // version 1.1.0부터 지원.
 	    pay_method : 'card',
 	    merchant_uid : 'merchant_' + new Date().getTime(),
-	    name : '주문명:양념치킨',
+	    name : '주문기업:${DTO.giupname}, 주문명:양념치킨',
 	    amount : 100,
 	    buyer_email : 'djswprkwlsk1@naver.com',
 	    buyer_name : '김종현',

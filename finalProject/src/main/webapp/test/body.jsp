@@ -12,7 +12,7 @@
    <style type="text/css">
 
 #gesipan table, #gesipan td, #gesipan a {
-	background-color: white;
+	/* background-color: white; */
 }
 #gesipan table {
 	margin: 23.5px 44.75px;
@@ -237,20 +237,20 @@
 @media only screen and (min-resolution:2dppx) {
 	.cutter.chicken .cover {
 		border-radius: 50%;
-		background-image: url("../resource/img/chicken.jpg");
+		background-image: url(../resource/img/chickenBase.png);
 		width: 200px; height: auto;
 		background-size: 200px 200px;
 	}
 	.cutter.chicken .default {
 		border-radius: 50%;
-		background-image: url("../resource/img/chicken.jpg");
+		background-image: url(../resource/img/chickenBase.png);
 		background-size: 200px 200px;
 	}
 }
 
 .cutter.chicken .default {
 	border-radius: 50%;
-	background-image: url("../resource/img/chicken.jpg");
+	background-image: url(../resource/img/chickenBase.png);
 	background-size: 200px 200px;
 }
 
@@ -888,7 +888,17 @@
 <body>
 
 
-
+<div>
+ 		<table style="margin: auto; text-align:center; width: 979px; height: 45px; border-collapse: collapse;" id="headerMenu">
+ 			<tr>
+ 				<th id="menu" onclick="location.href='<%=cp%>/test/body01.jsp';">메뉴</th>
+ 				<th id="area" onclick="location.href='<%=cp%>/test/body02.jsp';">주변 맛집</th>
+            	<th id="weather" onclick="location.href='<%=cp%>/test/body03.jsp';">날씨와 추천</th>
+            	<th id="random" onclick="location.href='<%=cp%>/test/body04.jsp';">랜덤주문</th>
+            	<th id="customer" onclick="location.href='<%=cp%>/test/body05.jsp';">고객센터</th>
+ 			</tr>
+ 		</table>
+ 	</div>
 
    
    <input type="hidden" name="CurClass" id="CurClass" value="">
@@ -985,7 +995,7 @@
 		</tr>
 		<tr>
 			<td colspan="2" style="font-size: 13px;">
-				안녕하세요. 사이트이름입니다. 현재 시행중인 회원제 선정기준 및 혜택 에 대해 안내 드립니다.
+				안녕하세요. 배달행입니다. 현재 시행중인 회원제 선정기준 및 혜택 에 대해 안내 드립니다.
 			</td>
 		</tr>
 		<tr>
@@ -1040,7 +1050,7 @@
 		</tr>
 		<tr>
 			<td colspan="2" style="font-size: 13px;">
-				안녕하세요. 사이트이름입니다. 오늘은 치킨의 날로써 모든 치킨이 반값이오니 많은 주문 바랍니다.
+				안녕하세요. 배달행입니다. 오늘은 치킨의 날로써 모든 치킨이 반값이오니 많은 주문 바랍니다.
 			</td>
 		</tr>
 		<tr>
@@ -1059,7 +1069,7 @@
 		</tr>
 		<tr>
 			<td colspan="2" style="font-weight: bold;">
-				내닉네임 | [질문] 아이디를 잊어버렸습니다.
+				[질문] 아이디를 잊어버렸습니다.
 			</td>
 		</tr>
 		<tr>
@@ -1092,12 +1102,6 @@ $container.imagesLoaded( function() {
   });
 });
 
-
-
 </script>
-
-
-
-
-
-</body></html>
+</body>
+</html>

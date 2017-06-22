@@ -9,7 +9,6 @@
 <html>
 <head>
 <title>Insert title here</title>
-<script type="text/javascript" src="<%=cp%>/resource/jquery/js/jquery-1.12.4.min.js"></script>
 </head>
 <body>
 

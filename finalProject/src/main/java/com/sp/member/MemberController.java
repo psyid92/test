@@ -31,4 +31,9 @@ public class MemberController {
 	public String memberForm(){
 		return "member/member";
 	}
+	
+	@RequestMapping(value="/member/member", method=RequestMethod.POST)
+	public String memberSignin(){
+		return "mainLayout";
+	}
 }

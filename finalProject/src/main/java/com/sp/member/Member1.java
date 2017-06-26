@@ -1,15 +1,9 @@
 package com.sp.member;
 
 public class Member1 {
-	private String m1_id, m1_pwd, m1_created, m1_lastLogin, m1_email;
+	private String m1_pwd, m1_created, m1_lastLogin, m1_email;
 	private int m1_sleep, m1_num;
 	
-	public String getM1_id() {
-		return m1_id;
-	}
-	public void setM1_id(String m1_id) {
-		this.m1_id = m1_id;
-	}
 	public String getM1_pwd() {
 		return m1_pwd;
 	}

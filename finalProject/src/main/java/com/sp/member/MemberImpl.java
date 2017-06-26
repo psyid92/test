@@ -1,16 +1,25 @@
 package com.sp.member;
 
-public class MemberImpl implements MemberDAO{
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.sp.common.dao.CommonDAO;
+
+@Service("member.memberService")
+public class MemberImpl implements MemberDAO{
+	
+	@Autowired
+	private CommonDAO  dao;
 	
 	@Override
 	public int insertMember(Member1 dto) throws Exception {
 		int result = 0;
 		
 		try {
-			
+			dao.insertData("insertMember1", dto);
 		} catch (Exception e) {
-			// TODO: handle exception
+			e.printStackTrace();
 		}
 		return result;
 	}

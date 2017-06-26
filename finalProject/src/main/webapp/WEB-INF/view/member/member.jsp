@@ -14,7 +14,7 @@
 </head>
 <body>
 <div style="width: 940px; height: 780px; position: absolute; left: 50%; top: 50%; margin: -390px 0 0 -470px;">
-	<form class="form-horizontal" action="/member/member" method="post">
+	<form class="form-horizontal" action="<%=cp %>/member/member" method="post">
 		<fieldset>
 			<legend>Legend</legend>
 			<div class="form-group">

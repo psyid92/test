@@ -5,7 +5,15 @@
 <%
 	String cp=request.getContextPath();
 %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="EUC-KR">
+<title>Insert title here</title>
+</head>
+<body>
 
 
-
-관리자 헤더 !!
+배달행 관리자 페이지
+</body>
+</html>

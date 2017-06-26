@@ -8,7 +8,8 @@ public class MenuController {
 	
 	@RequestMapping("/menu")
 	public String goMenu(){
-		return "menu/bodybody";
+		System.out.println("asd");
+		return ".menu.menu";
 	}
 
 }

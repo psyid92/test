@@ -7,12 +7,17 @@
 %>
 <!DOCTYPE html>
 <html>
+<script type="text/javascript" src="<%=cp%>/resource/jquery/js/jquery-1.12.4.min.js"></script>
+
+<script type="text/javascript">
+
+
+</script>
 <body style="background:#f4efe1; ">
-	<div id="header">
-		<jsp:include page="header.jsp"/>
-	</div>
  <div id="allBody" style="width:979px; max-width: 80%; margin: auto;">
-    
+    <div style="background: black; margin: auto; min-height: 100px; vertical-align: middle; display: table-ce" id="myGeo" align="center">
+    <!-- 현재 위치 검색 버튼 - ajax로 반영 -->
+    </div>
     <hr>
     
     <table style="width: 100%;">
@@ -40,8 +45,5 @@
     </table>
     
  </div>
-	<div id="footer">
-		<jsp:include page="footer.jsp"/>
-	</div>
 </body>
 </html>

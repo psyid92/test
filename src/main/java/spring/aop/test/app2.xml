@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="
+	    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	    http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+	<bean id="testServiceTarget" class="spring.aop.test.TestServiceImpl"/>
+	
+	<!-- advice 클래스 : 공통사항을 가지고 있는 클래스 -->
+	<bean id="beforeAdvice" class="spring.aop.test.BeforeLogAdvice"/>
+	
+	<!-- Joinpoint : advice를 적용할 지점 -->
+	<!-- Pointcut : Joinpoint의 부분집합으로 실제 advice가 적용되는 Joinpoint  -->
+	<!-- <bean id="testPointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut">
+		<property name="pattern" value=".*write.*"/>
+	</bean> -->
+	<bean id="testPointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut">
+		<property name="patterns">
+			<list>
+				<value>.*write.*</value>
+				<value>.*save.*</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- advisor : adivce와 Pointcut을 연결하는 작업 -->
+	<bean id="testAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor">
+		<property name="advice" ref="beforeAdvice"/>
+		<property name="pointcut" ref="testPointcut"/>
+	</bean>
+	
+	<!-- AOP 적용 -->
+	<bean id="testService" class="org.springframework.aop.framework.ProxyFactoryBean">
+		<property name="target" ref="testServiceTarget"/>
+		<property name="interceptorNames">
+			<list>
+				<value>testAdvisor</value>
+			</list>
+		</property>
+	</bean>
+   
+</beans>

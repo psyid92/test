@@ -125,7 +125,14 @@ function updateBoard() {
 					location.href="<%=cp%>/member/login";
 				}
 			}
+			,beforeSend : function(e) {
+				e.setRequestHeader("AJAX", true);
+			}
 			,error:function(e) {
+				if (e.status == 403) {
+					location.href="<%=cp%>/member/login";
+					return;
+				}
 				console.log(e.responseText);
 			}
 			

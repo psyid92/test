@@ -12,11 +12,6 @@ public class ChatController {
 	
 	@RequestMapping("/chat/main")
 	public String chat(HttpSession session) throws Exception {
-		SessionInfo info = (SessionInfo) session.getAttribute("member");
-				
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		return ".chat.main";
 	}
 }

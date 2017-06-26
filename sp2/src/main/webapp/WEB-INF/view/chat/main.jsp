@@ -5,7 +5,8 @@
 <%
 	String cp = request.getContextPath();
 	/* 채팅 할 주소 */
-	String wsURL = "ws://" + request.getServerName() + ":" + request.getServerPort() + cp + "/chat.msg";
+	// String wsURL = "ws://" + request.getServerName() + ":" + request.getServerPort() + cp + "/chat.msg";
+	String wsURL = "http://" + request.getServerName() + ":" + request.getServerPort() + cp + "/chat.msg";
 %>
 
 <style>
@@ -37,13 +38,17 @@
 	margin-bottom: 0px;
 }
 </style>
-
+<script src="<%=cp%>/resource/sockjs/sockjs.min.js"></script>
 <script>
 $(function() {
-	var wsURL = "<%=wsURL%>";
+	// IE8 지원, 프로토콜은 ws가 아닌 http
+	
+	var wsUrl = "<%=wsURL%>";
 	var socket = null;
 	
-	socket = new WebSocket(wsURL);
+	// IE8 지원은 sockjs 라이브러리의 함수를 이용한다.
+	// socket = new WebSocket(wsUrl);
+	socket = new SockJS(wsUrl);
 	
 	socket.onopen = function(evt) {onConnect(evt);};
 	socket.onclose = function(evt) {alert("연결 차단...");};
@@ -62,6 +67,12 @@ $(function() {
 		jsonStr = JSON.stringify(obj);
 	
 		socket.send(jsonStr);
+		
+		$("#chatMsg").on("keydown", function(event){
+			if(event.keyCode == 13)
+				sendMessage();
+		});
+		
 	}
 	
 	function onMessage(evt) {
@@ -75,10 +86,61 @@ $(function() {
 			
 			var s = "<p id='pList" + userId + "'>"+nickName + "(" + userId + ")</p>";
 			$("#chatConnectList").append(s);
+		} else if (cmd == "message") {
+			var guestId = data.guestId;
+			var nickName = data.nickName;
+			var msg = data.message;
 			
+			var s = nickName + "> " + msg;
+			writeToScreen(s);
+		} else if (cmd == "disconn") {
+			var guestId = data.guestId;
+			var nickName = data.nickName;
+			
+			$("#pList" + guestId).remove();
+			
+			var s = nickName + "(" + guestId + ") 님이 저승으로 가셨습니다.";
+			
+			writeToScreen(s);
+		} else if (cmd == "time") {
+			var hour = data.hour;
+			var minute = data.minute;
+			var second = data.second;
+			
+			s = hour + " : " + minute + " : " + second;
+			
+			writeToScreen(s);
 		}
 	}
+	
+	function sendMessage() {
+		var msg = $("#chatMsg").val().trim();
+		if (!msg)
+			return;
+		
+		var obj = {};
+		var jsonStr;
+		obj.cmd = "message";
+		obj.message = msg;
+		jsonStr = JSON.stringify(obj);
+		socket.send(jsonStr);
+		
+		$("#chatMsg").val("");
+		
+		writeToScreen("보냄> " + msg);
+		
+	}
 });
+
+function writeToScreen(message) {
+	var $chat = $("#chatMsgList");
+	$chat.append("<p>");
+	
+	$chat.find("p:last").html(message);
+	
+	$chat.scrollTop($chat.prop("scrollHeight"));
+}
+
 </script>
 <div class="body-container" style="width: 700px;">
     <div class="body-title">

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="boardCategory">
+
+	<select id="maxCategoryNum"  resultType="Integer" parameterType="map">
+	    SELECT NVL(MAX(categoryNum), 0) FROM ${tableName}_category
+	</select>
+	
+	<!-- 게시판 카테고리 추가 -->
+	<!-- 주제를선택하지않은대분류,주제를선택한대분류,주제를선택하지않은중분류,주제를선택한중분류  -->
+	<insert id="insertCategory" parameterType="com.sp.blog.post.Category">
+	   <if test="parent==0 and themeNum==0">
+	        INSERT INTO ${tableName}_category (categoryNum, classify, closed)
+	           VALUES (#{categoryNum}, #{classify}, #{closed})
+	   </if>
+	   <if test="parent==0 and themeNum!=0">
+	    INSERT INTO ${tableName}_category (categoryNum, classify, closed, themeNum)
+	           VALUES (#{categoryNum}, #{classify}, #{closed}, #{themeNum})
+	   </if>
+	   <if test="parent!=0 and themeNum==0">
+	    INSERT INTO ${tableName}_category (categoryNum, classify, closed, parent)
+	           VALUES (#{categoryNum}, #{classify}, ${closed}, #{parent})
+	   </if>
+	   <if test="parent!=0 and themeNum!=0">
+	    INSERT INTO ${tableName}_category (categoryNum, classify, closed, parent, themeNum)
+	           VALUES (#{categoryNum}, #{classify}, ${closed}, #{parent}, #{themeNum})
+	   </if>
+	</insert>
+	
+	<!-- 게시판 카테고리 대분류 -->
+	<select id="listCategoryGroup" parameterType="map" resultType="com.sp.blog.post.Category">
+	    SELECT categoryNum, classify, closed
+	              ,NVL(c.themeNum, 0) themeNum, t.subject themeSubject
+	          FROM ${tableName}_category c
+	          LEFT OUTER JOIN blogInfo_theme t ON c.themeNum = t.themeNum
+	          WHERE c.parent IS NULL
+	          ORDER BY categoryNum ASC
+	</select>
+	
+	<!-- 게시판 카테고리 중분류 -->
+	<select id="listCategory" parameterType="map" resultType="com.sp.blog.post.Category">
+	    SELECT categoryNum, classify, closed, c.parent
+	                ,NVL(c.themeNum, 0) themeNum, t.subject themeSubject
+ 	          FROM ${tableName}_category c
+	          LEFT OUTER JOIN blogInfo_theme t ON c.themeNum = t.themeNum
+	          WHERE parent = #{groupNum}
+	          ORDER BY categoryNum ASC
+	</select>
+	
+	<!-- 게시판 카테고리를 계층적으로 가져오기 -->
+	<select id="listCategoryAll" parameterType="map" resultType="com.sp.blog.post.Category">
+	    SELECT categoryNum, classify, c.closed, NVL(c.parent, 0) parent
+	                 ,NVL(c.themeNum, 0) themeNum, t.subject themeSubject
+	    FROM
+	    (
+	         SELECT 0 categoryNum, null classify, 0 closed, null parent, 0 themeNum
+	            FROM DUAL
+	         UNION ALL
+	         SELECT categoryNum, classify, closed, NVL(parent, 0) parent, NVL(themeNum, 0) themeNum
+  	            FROM ${tableName}_category
+             <if test="owner==0">
+  	             WHERE closed=0
+  	         </if>  	         
+	    ) c
+        LEFT OUTER JOIN blogInfo_theme t ON c.themeNum = t.themeNum
+	    WHERE categoryNum!=0
+	    START WITH categoryNum=0
+	    CONNECT BY PRIOR categoryNum=c.parent	
+	</select>
+
+	<select id="readCategory"  resultType="com.sp.blog.post.Category" parameterType="map">
+	    SELECT c.categoryNum, c.classify, closed, NVL(c.parent, 0) parent
+	                  ,g.classify groupClassify
+	                  ,NVL(c.themeNum, 0) themeNum, t.subject themeSubject
+	    FROM ${tableName}_category c
+        LEFT OUTER JOIN (
+              SELECT categoryNum, classify FROM ${tableName}_category
+              WHERE parent IS NULL
+        ) g ON c.parent = g.categoryNum
+	    LEFT OUTER JOIN blogInfo_theme t ON c.themeNum = t.themeNum
+	    WHERE c.categoryNum=#{categoryNum}
+	</select>
+
+	<!-- 게시판 카테고리 수정 -->
+	<update id="updateCategory" parameterType="com.sp.blog.post.Category">
+	   <if test="parent==0 and themeNum==0">
+	        UPDATE ${tableName}_category SET classify=#{classify}, closed=#{closed}
+	                ,parent=NULL
+	                ,themeNum=NULL
+	              WHERE categoryNum=#{categoryNum}
+	   </if>
+	   <if test="parent==0 and themeNum!=0">
+	        UPDATE ${tableName}_category SET classify=#{classify}, closed=#{closed}
+	                ,parent=NULL
+                    ,themeNum=#{themeNum}
+	              WHERE categoryNum=#{categoryNum}
+	   </if>
+	   <if test="parent!=0 and themeNum==0">
+	        UPDATE ${tableName}_category SET classify=#{classify}, closed=#{closed}
+                    ,parent=#{parent}
+	                ,themeNum=NULL
+	              WHERE categoryNum=#{categoryNum}
+	   </if>
+	   <if test="parent!=0 and themeNum!=0">
+	        UPDATE ${tableName}_category SET classify=#{classify}, closed=#{closed}
+	                ,parent=#{parent}
+	                ,themeNum=#{themeNum}
+	              WHERE categoryNum=#{categoryNum}
+	   </if>
+	   
+	</update>
+	
+	<!-- 게시판 카테고리 삭제 -->
+	<delete id="deleteCategory" parameterType="map">
+		DELETE FROM ${tableName}_category WHERE categoryNum=#{categoryNum}
+	</delete>
+	
+	
+
+</mapper>

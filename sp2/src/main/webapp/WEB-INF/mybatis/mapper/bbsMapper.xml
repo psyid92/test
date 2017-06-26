@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="bbs">
+	<insert id="insertBoard" parameterType="com.sp.bbs.Board">
+		INSERT INTO bbs (num, userId, subject, content, saveFilename, originalFilename)
+		VALUES (bbs_seq.NEXTVAL, #{userId}, #{subject}, #{content},
+		#{saveFilename, jdbcType=VARCHAR}, #{originalFilename, jdbcType=VARCHAR})
+	</insert>
+	
+	<sql id="where-list">
+		<if test="searchKey=='subject'">
+			INSTR(subject, #{searchValue}) &gt;= 1
+		</if>
+		<if test="searchKey=='userName'">
+			INSTR(userName, #{searchValue}) = 1
+		</if>
+		<if test="searchKey=='content'">
+			DBMS_LOB.INSTR(content, #{searchValue}) &gt;= 1
+		</if>
+		<if test="searchKey=='created'">
+			TO_CHAR(created, 'YYYY-MM-DD') = #{searchValue} OR
+			TO_CHAR(created, 'YYYYMMDD') = #{searchValue}
+		</if>
+	</sql>
+	
+	<select id="dataCount" resultType="Integer" parameterType="map">
+		SELECT NVL(COUNT(*), 0) FROM bbs b JOIN member1 m ON b.userId = m.userId
+		<where>
+			<if test="searchValue != null and searchValue != ''">
+				<include refid="where-list"/>
+			</if>
+		</where>
+	</select>
+	
+	<select id="listBoard" resultType="com.sp.bbs.Board" parameterType="map">
+			SELECT * FROM (
+SELECT ROWNUM rnum, tb.* FROM (
+SELECT tbBbs.num, userId, userName, subject, created, hitCount, saveFilename, NVL(replyCount, 0) replyCount
+FROM 
+((
+SELECT num, b.userId, userName, subject, TO_CHAR(b.created, 'YYYY-MM-DD') created, hitCount,saveFilename
+FROM bbs b JOIN member1 m ON b.userId = m.userId
+  <where>
+    <if test="searchValue != null and searchValue != ''">
+      <include refid="where-list"/>
+    </if>
+  </where>
+)tbBbs
+LEFT OUTER JOIN
+(
+  SELECT num, COUNT(*) replyCount
+    FROM bbsReply WHERE answer = 0 GROUP BY num
+  )tbReply ON tbBbs.num = tbReply.num
+)
+ORDER BY num DESC
+<![CDATA[
+  ) tb WHERE ROWNUM <= #{end}
+)WHERE rnum >= #{start}
+]]>
+	</select>
+	<select id="readBoard" resultType="com.sp.bbs.Board" parameterType="Integer">
+		SELECT num, b.userId, userName, subject, content, hitCount, created, saveFilename, originalFilename
+		FROM bbs b JOIN member1 m ON b.userId = m.userId
+		WHERE num = #{num}
+	</select>
+	
+	<update id="updateHitCount" parameterType="Integer">
+		UPDATE bbs SET hitCount = hitCount + 1 WHERE num = #{num}
+	</update>
+	
+	<select id="preReadBoard" resultType="com.sp.bbs.Board" parameterType="map">
+		SELECT tb.* FROM (
+			SELECT num, subject FROM bbs
+			<where>
+				<if test="searchValue != null and searchValue != ''">
+					<include refid="where-list"/>
+				</if>
+				<![CDATA[
+					AND (num > #{num})
+				]]>
+			</where>
+			ORDER BY num ASC
+		) tb WHERE ROWNUM = 1
+	</select>
+	
+	<select id="nextReadBoard" resultType="com.sp.bbs.Board" parameterType="map">
+		SELECT tb.* FROM (
+			SELECT num, subject FROM bbs
+			<where>
+				<if test="searchValue != null and searchValue != ''">
+					<include refid="where-list"/>
+				</if>
+				<![CDATA[
+					AND (num < #{num})
+				]]>
+			</where>
+			ORDER BY num DESC
+		) tb WHERE ROWNUM = 1
+	</select>
+	<update id="updateBoard" parameterType="com.sp.bbs.Board">
+		UPDATE bbs SET subject = #{subject}, content = #{content}
+		,saveFilename = #{saveFilename, jdbcType=VARCHAR}
+		,originalFilename = #{originalFilename, jdbcType=VARCHAR}
+		WHERE num = #{num}
+	</update>		
+	
+	<delete id="deleteBoard" parameterType="Integer">
+		DELETE FROM bbs WHERE num = #{num}
+	</delete>
+	
+	<!-- 게시물 공감 -->
+	<insert id="insertLikeBoard" parameterType="com.sp.bbs.Board">
+		INSERT INTO bbsLike (num, userId)
+		VALUES (#{num}, #{userId})
+	</insert>
+	
+	<!-- 게시물 공감 개수 -->
+	<select id="countLikeBoard" resultType="Integer" parameterType="Integer">
+		SELECT NVL(COUNT(*), 0) FROM bbsLike WHERE num = #{num}
+	</select>
+	
+	<!-- 댓글 달기 -->
+	<insert id="insertReply" parameterType="com.sp.bbs.Reply">
+		INSERT INTO bbsReply (replyNum, num, userId, content, answer)
+		VALUES (bbsReply_seq.NEXTVAL, #{num}, #{userId}, #{content}, #{answer})
+	</insert>
+	
+	<!-- 댓글개수 -->
+	<select id="replyDataCount" parameterType="map" resultType="Integer">
+		SELECT NVL(COUNT(*), 0) FROM bbsReply
+		WHERE num = #{num} AND answer = 0
+	</select>
+	
+	<!-- 댓글리스트 -->
+	<select id="listReply" parameterType="map" resultType="com.sp.bbs.Reply">
+		SELECT * FROM (
+			SELECT ROWNUM rnum, tb.* FROM (
+				SELECT replyNum, num, r.userId, userName, content, created
+				FROM bbsReply r
+				JOIN member1 m ON r.userId = m.userId
+				WHERE num = #{num} AND answer = 0
+				ORDER BY replyNum DESC
+<![CDATA[
+			) tb WHERE ROWNUM <= #{end} 
+		) WHERE rnum >= #{start}
+]]>
+	</select>
+	
+	<!-- 댓글 삭제 -->
+	<delete id="deleteReply" parameterType="map">
+		DELETE FROM bbsReply WHERE
+		<if test="mode == 'num'">
+			num = #{num}
+		</if>
+		<if test="mode == 'reply'">
+			replyNum = #{replyNum}
+		</if>
+	</delete>
+</mapper>

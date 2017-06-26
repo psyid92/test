@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="photo">
+	<insert id="insertPhoto" 
+	      parameterType="com.sp.photo.Photo">
+	   INSERT INTO photo(num, userId, subject, imageFilename, content)
+	      VALUES (photo_seq.NEXTVAL, #{userId}, #{subject},  
+	             #{imageFilename}, #{content})
+	</insert>
+	
+	<sql id="where-list">
+	  <if test="searchKey=='userName'">
+	      userName=#{searchValue}
+	  </if>
+	  <if test="searchKey=='subject'">
+	       INSTR(subject, #{searchValue}) &gt; 0
+	  </if>
+	  <if test="searchKey=='content'">
+	      INSTR(content, #{searchValue}) &gt; 0 
+	  </if>
+	  <if test="searchKey=='created'">
+	      TO_CHAR(p.created, 'YYYY-MM-DD') = #{searchValue}
+	  </if>
+	</sql>
+		
+	<select id="dataCount" resultType="Integer" parameterType="map">
+		SELECT NVL(COUNT(*), 0) FROM photo p
+	        JOIN member2 m
+	        ON p.userId=m.userId
+	     <where>
+	     	<if test="searchValue!=null and searchValue!='' ">
+	     	    <include refid="where-list"/>
+	     	</if>
+	     </where>		
+	</select>
+	
+	<select id="listPhoto" parameterType="map"
+	     resultType="com.sp.photo.Photo">
+			SELECT * FROM (
+			    SELECT ROWNUM rnum, tb.* FROM (
+				     SELECT num, m.memberIdx, p.userId, userName, subject, imageFilename, 
+	                    TO_CHAR(created, 'YYYY-MM-DD') created
+	                     FROM photo p JOIN member2 m
+	                          ON p.userId = m.userId
+                    <where>
+                         <if test="searchValue != null and searchValue != ''">
+			                  <include refid="where-list"/>
+		                 </if>
+	                </where>
+		                ORDER BY num DESC
+		<![CDATA[
+		        ) tb WHERE ROWNUM <= #{end}
+		    ) WHERE rnum >= #{start}
+		]]>
+	</select>
+	
+	<select id="readPhoto" parameterType="Integer"
+	      resultType="com.sp.photo.Photo">
+	SELECT num, m.memberIdx, p.userId, userName, subject, imageFilename, content,
+	            created
+	             FROM photo p JOIN member2 m
+	                      ON p.userId = m.userId
+	             WHERE num=#{num}
+	</select>
+	
+	<!-- 이전글 -->
+	<select id="preReadPhoto" resultType="com.sp.photo.Photo" 
+				parameterType="map">
+		SELECT tb.* FROM (
+			SELECT num, subject
+			      FROM photo p
+			      JOIN member2 m ON p.userId=m.userId
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (num > #{num})
+		                 ]]>
+	                </where>
+				ORDER BY num ASC
+			) tb WHERE ROWNUM=1
+	</select>
+
+	<!-- 다음글 -->
+	<select id="nextReadPhoto" resultType="com.sp.photo.Photo" 
+				parameterType="map">
+		SELECT tb.* FROM (
+			SELECT num, subject
+			       FROM photo p
+			       JOIN member2 m ON p.userId=m.userId
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (num < #{num})
+		                 ]]>
+	                </where>
+				ORDER BY num DESC
+			) tb WHERE ROWNUM=1
+	</select>
+	
+	<update id="updatePhoto" parameterType="com.sp.photo.Photo">
+	   UPDATE photo SET subject=#{subject}, imageFilename=#{imageFilename},
+	        content=#{content}
+	        WHERE num=#{num}
+	</update>
+	
+	<delete id="deletePhoto" parameterType="Integer">
+	   DELETE FROM photo WHERE num=#{num}
+	</delete>
+
+	<!-- 게시물 공감 ................. -->
+	<insert id="insertLikePhoto" parameterType="com.sp.photo.Photo">
+	INSERT INTO photoLike(num, userId) VALUES (#{num}, #{userId})
+	</insert>
+
+	<select id="countLikePhoto" resultType="Integer" parameterType="Integer">
+	   SELECT  NVL(COUNT(*), 0) photoCountLike
+	        FROM photoLike WHERE num=#{num}
+	</select>
+
+	<!-- 회원 탈퇴시 게시물 삭제 ................. -->
+	<select id="listPhotoId" parameterType="String" resultType="com.sp.photo.Photo">
+	   SELECT num, m.memberIdx, p.userId, userName, subject, imageFilename, content,
+	          created
+		FROM photo p JOIN member2 m ON b.userId=m.userId
+		WHERE userId = #{userId}
+	</select>
+    <delete id="deletePhotoId" parameterType="String">
+         DELETE FROM photo WHERE userId = #{userId}
+    </delete>
+
+	<!-- 댓글 처리................. -->
+	<insert id="insertReply" parameterType="com.sp.photo.Reply">
+	INSERT INTO photoReply(replyNum, num, userId, content, answer)
+	   VALUES (photoReply_seq.NEXTVAL, #{num},#{userId},
+	        #{content}, #{answer})
+	</insert>
+	
+	<select id="replyDataCount" resultType="Integer" 
+	           parameterType="map">
+	   SELECT NVL(COUNT(*), 0)
+	        FROM photoReply WHERE num=#{num} AND answer=0
+	</select>
+	
+	<!-- 댓글 리스트 -->
+	<select id="listReply" resultType="com.sp.photo.Reply" 
+	          parameterType="map">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+		        SELECT tbreply.replyNum, num, userId, userName 
+		                    ,content, created, tbreply.answer
+		                    ,NVL(answerCount, 0) answerCount
+		                    ,NVL(likeCount, 0) likeCount
+		                    ,NVL(disLikeCount, 0) disLikeCount
+		        FROM
+		        (
+				      (
+					     SELECT replyNum, r.num, m.memberIdx, r.userId, userName, r.content, r.created, answer
+					        FROM photoReply r 
+			                JOIN photo p ON r.num=p.num
+			                JOIN member2 m ON r.userId=m.userId
+			                WHERE r.num=#{num} AND answer=0
+			           ) tbreply
+			           LEFT OUTER JOIN
+			           (
+			                SELECT answer, COUNT(*) answerCount
+                                 FROM photoReply GROUP BY answer
+			           ) tbanswer ON tbreply.replyNum = tbanswer.answer
+			           LEFT OUTER JOIN
+			           (
+			                SELECT replyNum, 
+			                         COUNT(DECODE(replyLike, 1, 1)) likeCount,
+			                         COUNT(DECODE(replyLike, 0, 1)) disLikeCount
+                                 FROM photoReplyLike GROUP BY replyNum
+			           ) tblike ON tbreply.replyNum = tblike.replyNum
+	           )
+	           ORDER BY replyNum DESC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+	</select>
+
+    <!-- 댓글별 답글 리스트 -->
+	<select id="listReplyAnswer" resultType="com.sp.photo.Reply" 
+	          parameterType="Integer">
+     SELECT replyNum, num, m.memberIdx, tbreply.userId, userName, content, created, answer
+	          FROM photoReply tbreply 
+	          JOIN member2 m ON tbreply.userId=m.userId
+              WHERE answer=#{answer}
+              ORDER BY replyNum DESC
+	</select>
+	
+    <!-- 댓글별 답글 개수 -->
+	<select id="replyCountAnswer" resultType="Integer" 
+	           parameterType="Integer">
+	   SELECT NVL(COUNT(*), 0)
+	        FROM photoReply WHERE answer=#{answer}
+	</select>
+	
+	<delete id="deleteReply" parameterType="map">
+	DELETE photoReply WHERE
+	    <if test="mode == 'num' ">
+			 num=#{num}
+		</if>
+	    <if test="mode == 'reply' ">
+			 replyNum IN 
+               (SELECT replyNum FROM photoReply START WITH  replyNum = #{replyNum}
+	            CONNECT BY PRIOR replyNum = answer)
+		</if>
+	    <if test="mode == 'answer' ">
+			 replyNum=#{replyNum}
+		</if>
+	</delete>
+	
+	<!-- 댓글 좋아요/싫어요 처리................. -->
+	<insert id="insertReplyLike" parameterType="com.sp.photo.Reply">
+	INSERT INTO photoReplyLike(replyNum, userId, replyLike)
+	   VALUES (#{replyNum}, #{userId}, #{replyLike})
+	</insert>
+
+	<select id="replyCountLike" resultType="map" 
+	           parameterType="Integer">
+	   SELECT  NVL(COUNT(DECODE(replyLike, 1, 1)), 0) likeCount,
+			        NVL(COUNT(DECODE(replyLike, 0, 1)), 0) disLikeCount
+	        FROM photoReplyLike WHERE replyNum=#{replyNum}
+	</select>
+
+</mapper>

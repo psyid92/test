@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+
+<select id="maxBoardNum" resultType="Integer">
+SELECT NVL(MAX(boardNum), 0) FROM board
+</select>
+
+<insert id="insertBoard" parameterType="com.sp.board.Board">
+INSERT INTO board 
+     (boardNum, memberIdx, subject, content,
+     groupNum, orderNo, depth, parent ) VALUES (
+        #{boardNum}, #{memberIdx}, #{subject}, #{content},
+        #{groupNum}, #{orderNo}, #{depth}, #{parent}
+     )
+</insert>
+
+<sql id="where-list">
+   <if test="searchKey=='userName' ">
+        userName=#{searchValue}
+   </if>
+   <if test="searchKey=='subject' ">
+        subject LIKE '%' || #{searchValue} || '%'
+   </if>
+   <if test="searchKey=='content' ">
+        DBMS_LOB.INSTR(content, #{searchValue}) &gt; 0
+   </if>
+   <if test="searchKey=='created' ">
+        TO_CHAR(b.created, 'YYYY-MM-DD') = #{searchValue}
+   </if>
+</sql>
+
+<select id="dataCount" resultType="Integer" parameterType="map">
+  SELECT NVL(COUNT(*), 0) 
+        FROM board b 
+        JOIN member1 m1 ON b.memberIdx = m1.memberIdx
+        JOIN member2 m2 ON m1.memberIdx = m2.memberIdx
+  <where>
+  	<if test="searchValue!=null and searchValue != '' ">
+  	      <include refid="where-list"/>
+  	</if>
+  </where>
+</select>
+
+<select id="listBoard" parameterType="map"
+            resultType="com.sp.board.Board">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+			     SELECT boardNum, m1.memberIdx, NVL(userName, '익명') userName, NVL(m2.userId, 'anonymous') userId,
+                      subject, TO_CHAR(b.created, 'YYYY-MM-DD')  created
+                      ,hitCount, groupNum, orderNo, depth
+			        FROM board b
+			        JOIN member1 m1 ON b.memberIdx = m1.memberIdx
+                    JOIN member2 m2 ON m1.memberIdx = m2.memberIdx
+                    <where>
+                         <if test="searchValue != null and searchValue != ''">
+			                  <include refid="where-list"/>
+		                 </if>
+	                </where>
+	                ORDER BY groupNum DESC, orderNo ASC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+</select>
+
+<!-- 글보기 -->
+<select id="readBoard" resultType="com.sp.board.Board" parameterType="Integer">
+		SELECT boardNum, m1.memberIdx, NVL(userName, '익명') userName, NVL(m2.userId, 'anonymous') userId, subject, content, groupNum, 
+                 depth, orderNo, parent, hitCount, b.created
+				 FROM board b
+				 JOIN member1 m1 ON b.memberIdx = m1.memberIdx
+                 JOIN member2 m2 ON m1.memberIdx = m2.memberIdx
+                 WHERE boardNum = #{boardNum}
+</select>
+	
+<!-- 조회수 증가 -->
+<update id="updateHitCount" parameterType="Integer">
+		UPDATE board SET hitCount=hitCount+1 WHERE boardNum = #{boardNum}
+</update>
+	
+<!-- 이전글 -->
+<select id="preReadBoard" resultType="com.sp.board.Board" 
+				parameterType="java.util.Map">
+	SELECT tb.* FROM (
+			SELECT boardNum, subject 
+			         FROM board b
+			         JOIN member1 m1 ON b.memberIdx = m1.memberIdx
+                     JOIN member2 m2 ON m1.memberIdx = m2.memberIdx
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (( groupNum = #{groupNum} AND orderNo < #{orderNo})
+                         OR (groupNum > #{groupNum} ))
+		                 ]]>
+	                </where>
+				ORDER BY groupNum ASC, orderNo DESC
+			) tb WHERE ROWNUM=1
+</select>
+
+<!-- 다음글 -->
+<select id="nextReadBoard" resultType="com.sp.board.Board" 
+				parameterType="java.util.Map">
+		SELECT tb.* FROM (
+			SELECT boardNum, subject 
+                 FROM board b
+                 JOIN member1 m1 ON b.memberIdx = m1.memberIdx
+                 JOIN member2 m2 ON m1.memberIdx = m2.memberIdx			
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (( groupNum = #{groupNum} AND orderNo > #{orderNo})
+                         OR (groupNum < #{groupNum} ))
+		                 ]]>
+	                </where>
+				ORDER BY groupNum DESC, orderNo ASC
+			) tb WHERE ROWNUM=1
+</select>
+
+<update id="updateBoard" parameterType="com.sp.board.Board">
+         UPDATE board SET subject=#{subject}, content=#{content}
+                    WHERE boardNum = #{boardNum}
+</update>
+      
+<delete id="deleteBoard" parameterType="Integer">
+             DELETE FROM board WHERE boardNum IN 
+               (SELECT boardNum FROM board START WITH  boardNum = #{boardNum}
+	            CONNECT BY PRIOR boardNum = parent)
+</delete>
+
+<update id="updateOrderNo" parameterType="map">
+       UPDATE board SET orderNo=orderNo+1
+   	<![CDATA[
+          WHERE groupNum = #{groupNum} AND orderNo > #{orderNo}
+	]]>                    
+</update>
+
+</mapper>

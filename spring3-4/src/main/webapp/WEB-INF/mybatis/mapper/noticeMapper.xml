@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="notice">
+
+	<select id="maxNum" resultType="Integer">
+		SELECT NVL(MAX(num), 0) FROM notice
+	</select>
+	
+	<insert id="insertNotice" 
+	      parameterType="com.sp.notice.Notice">
+       INSERT INTO notice(num, userId, subject, content, notice)
+               VALUES
+               (#{num}, #{userId}, #{subject},
+               #{content}, #{notice})
+    </insert>
+
+	<!-- sql 태그 -->
+	<!--
+       * LIKE 대신 INSTR() 함수를 사용하는 경우
+          INSTR(content, #{searchValue}) &gt; 0
+       * CLOB인 경우 검색(LIKE 사용하지 말것)
+          DBMS_LOB.INSTR(content, #{searchValue}) &gt; 0 
+	-->
+	<sql id="where-list">
+		<if test="searchKey=='userName' ">
+			userName=#{searchValue}
+		</if>
+		<if test="searchKey=='subject' ">
+			subject LIKE '%' || #{searchValue} || '%'
+		</if>
+		<if test="searchKey=='content' ">
+		    DBMS_LOB.INSTR( content, #{searchValue}) &gt; 0 
+		</if>
+		<if test="searchKey=='created' ">
+			TO_CHAR(created, 'YYYY-MM-DD') = #{searchValue}
+		</if>
+	</sql>
+	
+	<!-- 공지 글  리스트 -->
+	<select id="listNoticeTop"  resultType="com.sp.notice.Notice">
+          SELECT num, notice, m.memberIdx, n.userId, userName, subject,
+                  hitCount, 
+                  TO_CHAR(created, 'YYYY-MM-DD') created
+          FROM notice n
+          JOIN member2 m ON n.userId=m.userId 
+          WHERE notice =  1
+          ORDER BY num DESC
+	</select>
+	
+	<!--  데이터개수  -->
+	<select id="dataCount" parameterType="map" 
+	       resultType="Integer">
+		SELECT NVL(COUNT(*), 0) FROM notice n
+		     JOIN member2 m ON n.userId=m.userId
+		<where>
+			<if test="searchValue != null and searchValue!=''  ">
+				<include refid="where-list"/>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 리스트 -->
+	<select id="listNotice" parameterType="map" 
+	       resultType="com.sp.notice.Notice">
+		SELECT * FROM (
+		    SELECT ROWNUM rnum, tb.* FROM (
+			     SELECT num, notice, m.memberIdx, n.userId, userName, subject, hitCount,
+	                    created
+			        FROM notice n
+	                         JOIN member2 m ON n.userId=m.userId
+                    <where>
+                         <if test="searchValue != null and searchValue != ''">
+			                  <include refid="where-list"/>
+		                 </if>
+	                </where>
+	                ORDER BY num DESC
+	<![CDATA[
+	        ) tb WHERE ROWNUM <= #{end}
+	    ) WHERE rnum >= #{start}
+	]]>
+	 </select>
+
+    <!-- 글보기 -->
+    <select id="readNotice" resultType="com.sp.notice.Notice" 
+            parameterType="Integer">
+        SELECT num, m.memberIdx, n.userId, userName, subject, content, created, hitCount, notice
+           FROM notice n JOIN member2 m ON n.userId=m.userId 
+           WHERE num = #{num}
+    </select>
+
+    <!-- 조회수 증가 -->
+    <update id="updateHitCount" parameterType="Integer">
+        UPDATE notice SET hitCount=hitCount+1 WHERE num = #{num}
+    </update>
+
+    <!-- 이전글 -->
+    <select id="preReadNotice" resultType="com.sp.notice.Notice" 
+            parameterType="map">
+        SELECT tb.* FROM (
+            SELECT num, subject FROM notice n
+                    JOIN member2 m ON n.userId=m.userId
+                <where>
+                    <if test="searchValue != null and searchValue != '' ">
+                        <include refid="where-list"/>
+                    </if>
+                    <![CDATA[
+                        AND (num > #{num})
+                    ]]>
+                </where>
+                ORDER BY num ASC
+            ) tb WHERE ROWNUM=1
+    </select>
+
+    <!-- 다음글 -->
+    <select id="nextReadNotice" resultType="com.sp.notice.Notice" 
+            parameterType="map">
+        SELECT tb.* FROM (
+            SELECT num, subject FROM notice n
+                 JOIN member2 m ON n.userId=m.userId
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+                              <include refid="where-list"/>
+                         </if>
+                       <![CDATA[
+                         AND (num < #{num})
+                         ]]>
+                    </where>
+                ORDER BY num DESC
+            ) tb WHERE ROWNUM=1
+    </select>
+    
+    <!-- 수정 -->
+    <update id="updateNotice" 
+          parameterType="com.sp.notice.Notice">
+          UPDATE notice SET subject=#{subject},
+               content=#{content}, notice=#{notice}
+               WHERE num=#{num}
+    </update>
+    
+    <!-- 삭제 -->
+	<delete id="deleteNotice" parameterType="Integer">
+		DELETE FROM notice WHERE num=#{num}
+	</delete>
+	
+	<!-- 파일 -->
+	<insert id="insertFile" parameterType="com.sp.notice.Notice">
+	  INSERT INTO noticeFile(fileNum, num, saveFilename, 
+	    originalFilename, fileSize) VALUES
+	       (noticeFile_seq.NEXTVAL, #{num}, #{saveFilename},
+	           #{originalFilename}, #{fileSize})
+	</insert>
+	
+	<select id="listFile" parameterType="Integer"
+	              resultType="com.sp.notice.Notice">
+	SELECT  fileNum, num, saveFilename, 
+	    originalFilename, fileSize
+	    FROM noticeFile WHERE  num=#{num}    
+	</select>
+	
+	<select id="readFile" parameterType="Integer"
+	              resultType="com.sp.notice.Notice">
+	SELECT  fileNum, num, saveFilename, 
+	    originalFilename, fileSize
+	    FROM noticeFile WHERE fileNum=#{fileNum}      
+	</select>
+	
+	<delete id="deleteFile" parameterType="map">
+	DELETE FROM noticeFile WHERE ${field} = #{num}
+	</delete>
+	
+</mapper>

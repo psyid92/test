@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="blogPhoto">
+	<select id="maxNum" resultType="Integer" parameterType="map">
+		SELECT NVL(MAX(num), 0) FROM ${tableName}_photo
+	</select>
+
+	<insert id="insertPhoto" 
+	      parameterType="com.sp.blog.photo.Photo">
+	   INSERT INTO ${tableName}_photo(num, blogSeq, subject, imageFilename, content)
+	      VALUES (#{num}, #{blogSeq},  #{subject},
+	             #{imageFilename}, #{content})
+	</insert>
+	
+	<sql id="where-list">
+	  <if test="searchKey=='subject'">
+	       INSTR(p.subject, #{searchValue}) &gt; 0
+	  </if>
+	  <if test="searchKey=='content'">
+	      INSTR(p.content, #{searchValue}) &gt; 0 
+	  </if>
+	  <if test="searchKey=='created'">
+	      TO_CHAR(p.created, 'YYYY-MM-DD') = #{searchValue}
+	  </if>
+	</sql>
+		
+	<select id="dataCount" resultType="Integer" parameterType="map">
+		SELECT NVL(COUNT(*), 0) FROM ${tableName}_photo p
+		JOIN blogInfo i ON p.blogSeq = i.blogSeq
+	     <where>
+	     	<if test="searchValue!=null and searchValue!='' ">
+	     	    <include refid="where-list"/>
+	     	</if>
+	     </where>		
+	</select>
+	
+	<select id="listPhoto" parameterType="map"
+	     resultType="com.sp.blog.photo.Photo">
+			SELECT * FROM (
+			    SELECT ROWNUM rnum, tb.* FROM (
+				     SELECT p.num, p.blogSeq, i.userId blogId, p.subject, p.imageFilename, 
+	                    TO_CHAR(p.created, 'YYYY-MM-DD') created
+	                     FROM ${tableName}_photo p
+	                     JOIN blogInfo i ON p.blogSeq = i.blogSeq
+                    <where>
+                         <if test="searchValue != null and searchValue != ''">
+			                  <include refid="where-list"/>
+		                 </if>
+	                </where>
+		                ORDER BY num DESC
+		<![CDATA[
+		        ) tb WHERE ROWNUM <= #{end}
+		    ) WHERE rnum >= #{start}
+		]]>
+	</select>
+	
+	<select id="readPhoto" parameterType="map"
+	      resultType="com.sp.blog.photo.Photo">
+	SELECT p.num, p.blogSeq, i.userId blogId, p.subject, p.imageFilename, p.content,
+	            p.created
+	             FROM ${tableName}_photo p
+	             JOIN blogInfo i ON p.blogSeq = i.blogSeq
+	             WHERE num=#{num}
+	</select>
+	
+	<!-- 이전글 -->
+	<select id="preReadPhoto" resultType="com.sp.blog.photo.Photo" 
+				parameterType="map">
+		SELECT tb.* FROM (
+			SELECT p.num, p.subject
+			      FROM ${tableName}_photo p
+			      JOIN blogInfo i ON p.blogSeq = i.blogSeq
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (p.num > #{num})
+		                 ]]>
+	                </where>
+				ORDER BY num ASC
+			) tb WHERE ROWNUM=1
+	</select>
+
+	<!-- 다음글 -->
+	<select id="nextReadPhoto" resultType="com.sp.blog.photo.Photo" 
+				parameterType="map">
+		SELECT tb.* FROM (
+			SELECT p.num, p.subject
+			       FROM ${tableName}_photo p
+			       JOIN blogInfo i ON p.blogSeq = i.blogSeq
+                    <where>
+                         <if test="searchValue != null and searchValue != '' ">
+			                  <include refid="where-list"/>
+		                 </if>
+		               <![CDATA[
+		                 AND (p.num < #{num})
+		                 ]]>
+	                </where>
+				ORDER BY num DESC
+			) tb WHERE ROWNUM=1
+	</select>
+	
+	<update id="updatePhoto" parameterType="com.sp.blog.photo.Photo">
+	   UPDATE ${tableName}_photo SET subject=#{subject}, imageFilename=#{imageFilename},
+	        content=#{content}
+	        WHERE num=#{num}
+	</update>
+	
+	<delete id="deletePhoto" parameterType="map">
+	   DELETE FROM ${tableName}_photo WHERE num=#{num}
+	</delete>
+
+</mapper>

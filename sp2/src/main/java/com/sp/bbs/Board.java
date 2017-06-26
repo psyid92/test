@@ -12,6 +12,16 @@ public class Board {
 	private String saveFilename;
 	private String originalFilename;
 
+	private int replyCount;
+
+	public int getReplyCount() {
+		return replyCount;
+	}
+
+	public void setReplyCount(int replyCount) {
+		this.replyCount = replyCount;
+	}
+
 	public int getListNum() {
 		return listNum;
 	}

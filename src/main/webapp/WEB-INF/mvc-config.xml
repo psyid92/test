@@ -22,7 +22,12 @@
 	<mvc:default-servlet-handler/>
 
 	<context:component-scan base-package="com.sp" />
-
+	
+	<!-- 트랜잭션을 위한 aop 등록 -->
+	<aop:config proxy-target-class="true">
+		<aop:pointcut expression="execution(public * com.sp..*Controller.*(..))" id="controllerOperation"/>
+	</aop:config>
+	
 	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
 		<property name="order" value="1" />
 		<property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />

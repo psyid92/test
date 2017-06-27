@@ -14,20 +14,20 @@
 </head>
 <body>
 <div style="width: 940px; height: 780px; position: absolute; left: 50%; top: 50%; margin: -390px 0 0 -470px;">
-	<form class="form-horizontal">
+	<form class="form-horizontal" action="<%=cp %>/member/member" method="post">
 		<fieldset>
 			<legend>Legend</legend>
 			<div class="form-group">
 				<label for="inputEmail" class="col-lg-2 control-label">Email</label>
 				<div class="col-lg-10">
-					<input type="text" class="form-control" id="inputEmail"
+					<input type="text" class="form-control" id="inputEmail" name = "m1_email"
 						placeholder="Email">
 				</div>
 			</div>
 			<div class="form-group">
 				<label for="inputPassword" class="col-lg-2 control-label">Password</label>
 				<div class="col-lg-10">
-					<input type="password" class="form-control" id="inputPassword"
+					<input type="password" class="form-control" id="inputPassword" name="m1_pwd"
 						placeholder="Password">
 					<div class="checkbox">
 						<label> <input type="checkbox"> Checkbox

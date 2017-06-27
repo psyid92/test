@@ -48,7 +48,16 @@ public class MemberController {
 		info.setUserName(dto.getUserName());
 		session.setAttribute("member", info);
 		
-		return "redirect:/";
+		// 로그인 전 페이지로 이동
+		String uri = (String) session.getAttribute("preLoginURI");
+		if (uri == null) {
+			uri = "redirect:/";
+		} else {
+			uri = "redirect:" + uri;
+		}
+		session.removeAttribute("preLoginURI");
+		
+		return uri;
 	}	
 
 	@RequestMapping(value="/member/logout")

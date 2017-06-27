@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member">
+
+<insert id="insertMember1" parameterType="com.sp.member.Member1">
+	insert into member1(m1_num, m1_email, m1_pwd, m1_sleep)
+		values(m1_seq, #{m1_email}, #{m1_pwd}, 0)
+</insert>
+
+<update id="newLogin" parameterType="String">
+	update member1 set m1_lastlogin = sysdate where m1_email= #{m1_email} 
+</update>
+
+</mapper>

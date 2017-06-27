@@ -110,10 +110,6 @@ public class BoardController {
 	public String createdForm(
 			Model model, HttpSession session
 			) throws Exception {
-		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		model.addAttribute("mode","created");
 		return ".bbs.created";
 	}
@@ -123,9 +119,6 @@ public class BoardController {
 			HttpSession session
 			) throws Exception {
 		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		
 		String root = session.getServletContext().getRealPath("/");
 		String pathname = root + "uploads" + File.separator + "bbs";
@@ -143,13 +136,6 @@ public class BoardController {
 			HttpServletResponse resp,
 			HttpSession session
 			) throws Exception {
-		String cp = req.getContextPath();
-		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			resp.sendRedirect(cp + "/member/login");
-			return;
-		}
-		
 		String root = session.getServletContext().getRealPath("/");
 		String pathname = root + "uploads" + File.separator + "bbs";
 		Board dto = service.readBoard(num);
@@ -218,9 +204,6 @@ public class BoardController {
 			HttpSession session
 			) throws Exception {
 		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		
 		Board dto = service.readBoard(num);
 		if (dto == null) {
@@ -243,10 +226,6 @@ public class BoardController {
 			HttpSession session
 			) throws Exception {
 		
-		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		
 		String root = session.getServletContext().getRealPath("/");
 		String pathname = root + File.separator + "uploads" + File.separator + "bbs";
@@ -265,9 +244,6 @@ public class BoardController {
 			) throws Exception {
 		
 		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		
 		Board dto = service.readBoard(num);
 		if (dto == null) {
@@ -299,9 +275,6 @@ public class BoardController {
 			HttpSession session
 			) throws Exception {
 		SessionInfo info = (SessionInfo) session.getAttribute("member");
-		if (info == null) {
-			return "redirect:/member/login";
-		}
 		String root = session.getServletContext().getRealPath("/");
 		String pathname = root + File.separator + "uploads" + File.separator + "bbs";
 		
@@ -339,14 +312,11 @@ public class BoardController {
 		SessionInfo info = (SessionInfo) session.getAttribute("member");
 		String state = "true";
 		
-		if (info == null) {
-			state = "loginFail";
-		} else {
-			dto.setUserId(info.getUserId());
-			int result = service.insertReply(dto);
-			if (result == 0)
-				state = "false";
-		}
+	
+		dto.setUserId(info.getUserId());
+		int result = service.insertReply(dto);
+		if (result == 0)
+			state = "false";
 		
 		Map<String, Object> model = new HashMap<>();
 		model.put("state", state);

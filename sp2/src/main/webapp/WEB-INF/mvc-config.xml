@@ -58,10 +58,34 @@
          <property name="maxUploadSize" value="10485760" />
     </bean>
     
+    <!-- 인터셉터 -->
+    <mvc:interceptors>
+    	<mvc:interceptor>
+    		<mvc:mapping path="/**"/>
+    		
+    		<!-- 제외 -->
+    		<mvc:exclude-mapping path="/"/>
+    		<mvc:exclude-mapping path="/main/**"/>
+    		<mvc:exclude-mapping path="/member/login"/>
+    		<mvc:exclude-mapping path="/member/member"/>
+    		<mvc:exclude-mapping path="/member/idCheck"/>
+    		<mvc:exclude-mapping path="/resource/**"/>
+    		
+    		<bean class="com.sp.member.LoginCheckInterceptor"/>
+    	</mvc:interceptor>
+    </mvc:interceptors>
+    
     <!-- 웹소켓 -->
-    <bean id="mySocketHandler" class="com.sp.chat.MySocketHandler"/>
+    <bean id="mySocketHandler" class="com.sp.chat.MySocketHandler" init-method="init"/>
+<!-- 
 	<websocket:handlers>
 		<websocket:mapping handler="mySocketHandler" path="/chat.msg"/>
+	</websocket:handlers>
+-->
+	<websocket:handlers>
+		<websocket:mapping handler="mySocketHandler" path="/chat.msg"/>
+		<!-- IE8 지원 -->
+		<websocket:sockjs/>
 	</websocket:handlers>
 	
     <!-- 예외처리 -->

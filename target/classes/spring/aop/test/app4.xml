@@ -18,12 +18,16 @@
 
 	<bean id="testService" class="spring.aop.test.TestServiceImpl"/>
 
-	<bean id="afterLogAdvice" class="spring.aop.test.AfterLogAdvice"/>
+	<!-- ProxyFactoryBean을 사용하지 않고 자동으로 AOP 적용 -->
+	<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"/>
 	
-	<!-- <aop:config> : aop 설정 -->
-	<aop:config>
-		<aop:pointcut expression="execution(public * spring.aop.test..*Service.*(..))" id="publicMethod"/>
-		<aop:advisor advice-ref="afterLogAdvice" pointcut-ref="publicMethod"/>
-	</aop:config>
+	<!-- Advice -->
+	<bean id="logAdvice" class="spring.aop.test.LogAdvice"/>
+	
+	<!-- Advisor -->
+	<bean class="org.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor">
+		<property name="advice" ref="logAdvice"/>
+		<property name="expression" value="execution(public * spring.aop.test..*Service.*(..))"/>
+	</bean>
 
 </beans>

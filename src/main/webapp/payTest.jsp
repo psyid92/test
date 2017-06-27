@@ -20,14 +20,14 @@
 	    pg : 'inicis', // version 1.1.0부터 지원.
 	    pay_method : 'card',
 	    merchant_uid : 'merchant_' + new Date().getTime(),
-	    name : '주문기업:${DTO.giupname}, 주문명:양념치킨',
-	    amount : 100,
-	    buyer_email : 'djswprkwlsk1@naver.com',
-	    buyer_name : '김종현',
-	    buyer_tel : '010-9970-1771',
-	    buyer_addr : '경기도 안산시 상록구 일동 592-6',
+	    name : '주문명 : ${pay_Content}',
+	    amount : ${pay_Pay}1,
+	    buyer_email : '${email}',
+	    buyer_name : '${name}',
+	    buyer_tel : '${pay_Tel}',
+	    buyer_addr : '${pay_Zip}',
 	    buyer_postcode : '123-456',
-	    m_redirect_url : '<%=cp%>/googleMapAPItest.jsp'
+	    m_redirect_url : 'googleMapAPItest.jsp'
 	}, function(rsp) {
 	    if ( rsp.success ) {
 	        var msg = '결제가 완료되었습니다.';
@@ -35,6 +35,7 @@
 	        msg += '상점 거래ID : ' + rsp.merchant_uid;
 	        msg += '결제 금액 : ' + rsp.paid_amount;
 	        msg += '카드 승인번호 : ' + rsp.apply_num;
+	        $("#pay_allContent").show();
 	    } else {
 	        var msg = '결제에 실패하였습니다.';
 	        msg += '에러내용 : ' + rsp.error_msg;
@@ -44,8 +45,15 @@
 </script>
 </head>
 <body>
-
-	
-
+	<div id="pay_allContent">
+		<input type="hidden" value="${pay_Num}">
+		<input type="hidden" value="${name}">
+		<input type="hidden" value="${email}">
+		<input type="hidden" value="${pay_Content}">
+		<input type="hidden" value="${pay_Pay}">
+		<input type="hidden" value="${pay_Tel}">
+		<input type="hidden" value="${pay_Zip}">
+		<input type="hidden" value="${pay_Giup}">
+	</div>
 </body>
 </html>
